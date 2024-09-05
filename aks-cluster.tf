@@ -1,5 +1,5 @@
 resource "azurerm_kubernetes_cluster" "aks_cluster" {
-  dns_prefix          = "${azurerm_resource_group.aks_rg.name}"
+  dns_prefix          = azurerm_resource_group.aks_rg.name
   location            = azurerm_resource_group.aks_rg.location
   name                = "${azurerm_resource_group.aks_rg.name}-cluster"
   resource_group_name = azurerm_resource_group.aks_rg.name
@@ -8,15 +8,15 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
 
 
   default_node_pool {
-    name       = "systempool"
-    vm_size    = "Standard_DS2_v2"
+    name                 = "systempool"
+    vm_size              = var.vm_size
     orchestrator_version = data.azurerm_kubernetes_service_versions.current.latest_version
     availability_zones   = var.availability_zones
     enable_auto_scaling  = var.enable_auto_scaling
     max_count            = var.max_node_count
     min_count            = var.min_node_count
     os_disk_size_gb      = var.os_disk_size_gb
-    type           = "VirtualMachineScaleSets"
+    type                 = "VirtualMachineScaleSets"
     node_labels = {
       "nodepool-type" = "system"
       "environment"   = var.environment
@@ -28,13 +28,13 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
       "environment"   = var.environment
       "nodepoolos"    = "linux"
       "app"           = "system-apps"
-    }    
+    }
   }
 
-# Identity (System Assigned or Service Principal)
+  # Identity (System Assigned or Service Principal)
   identity { type = "SystemAssigned" }
 
-# Add On Profiles
+  # Add On Profiles
   addon_profile {
     azure_policy { enabled = true }
     oms_agent {
@@ -43,39 +43,39 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
     }
   }
 
-# RBAC and Azure AD Integration Block
-role_based_access_control {
-  enabled = var.enable_rbac
-  azure_active_directory {
-    managed                = true
-    admin_group_object_ids = [azuread_group.aks_administrators.id]
+  # RBAC and Azure AD Integration Block
+  role_based_access_control {
+    enabled = var.enable_rbac
+    azure_active_directory {
+      managed                = true
+      admin_group_object_ids = [azuread_group.aks_administrators.id]
+    }
   }
-}  
 
-# Windows Admin Profile
-windows_profile {
-  admin_username            = var.windows_admin_username
-  admin_password            = var.windows_admin_password
-}
+  # Windows Admin Profile
+  windows_profile {
+    admin_username = var.windows_admin_username
+    admin_password = var.windows_admin_password
+  }
 
-# Linux Profile
-linux_profile {
-  admin_username = var.linux_admin_username
-  ssh_key {
+  # Linux Profile
+  linux_profile {
+    admin_username = var.linux_admin_username
+    ssh_key {
       key_data = file(var.ssh_public_key)
+    }
   }
-}
 
-# Network Profile
-network_profile {
-  load_balancer_sku = var.load_balancer_sku
-  network_plugin = var.network_plugin
-}
+  # Network Profile
+  network_profile {
+    load_balancer_sku = var.load_balancer_sku
+    network_plugin    = var.network_plugin
+  }
 
-# AKS Cluster Tags 
-tags = {
-  Environment = var.environment
-}
+  # AKS Cluster Tags 
+  tags = {
+    Environment = var.environment
+  }
 
 
 }
